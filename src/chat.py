@@ -1,6 +1,7 @@
 import socket
 import threading
 import chatGUI
+import elGamal
 
 FORMAT = 'utf-8'
 
@@ -27,12 +28,13 @@ class Server(threading.Thread):
         self.handleConnection(init)
 
         while True:
-            data = conn.recv(1024)
+            data = conn.recv(4096)
             if not data:
                 self.chatApp.log('empty message')
                 break
 
-            self.chatApp.printMessage(data.decode(FORMAT))
+            decrypted = self.chatApp.encryption.decrypt(data.decode(FORMAT))
+            self.chatApp.printMessage(decrypted.decode(FORMAT))
     
     def handleConnection(self, init):
         if not init:
@@ -45,6 +47,7 @@ class Server(threading.Thread):
             self.chatApp.peer = init[1]
             self.chatApp.peerHost = init[2]
             self.chatApp.peerPort = init[3]
+            self.chatApp.setPeerKey([int(init[4]), int(init[5]), int(init[6])])
         
         self.chatApp.connectBack()
 
@@ -70,7 +73,8 @@ class Client(threading.Thread):
     def send(self, message):
         if message != '':
             try:
-                self.sock.send(message.encode(FORMAT))
+                encrypted = self.chatApp.encryption.encrypt(message)
+                self.sock.send(encrypted.encode(FORMAT))
                 return True
             except socket.error as error:
                 self.chatApp.log('failed to send')
@@ -89,20 +93,26 @@ class Client(threading.Thread):
             self.chatApp.log('failed connecting to peer')
             return False
 
+        key = self.chatApp.getPublicKey()
         #send initial connection info
-        self.sock.send('init {0} {1} {2}'.format(self.chatApp.getNick(), socket.gethostname(), self.chatApp.port).encode(FORMAT))
+        self.sock.send('init {0} {1} {2} {3} {4} {5}'.format(self.chatApp.getNick(), socket.gethostname(), self.chatApp.port, key[0], key[1], key[2]).encode(FORMAT))
         self.chatApp.log('connected to peer')
         self.isConnected = True
+        self.chatApp.log('Chosen prime: ' + str(key[2]))
+        self.chatApp.log('Chosen alpha: ' + str(key[1]))
+        self.chatApp.log('Chosen Public key Beta: ' + str(key[0]))
     
     def stop(self):
         self.sock.close()
         self.sock = None
-        
+        exit(1)
 
 class ChatApp():
     def __init__(self):
         super().__init__()
+        self.encryption = elGamal.ElGamal(self)
         self.gui = chatGUI.App(self)
+
         self.port = 3334 # Port the server runs on
         self.nick = "" # User's nickname
         self.peer = "" # Peer nickname
@@ -132,7 +142,7 @@ class ChatApp():
         self.gui.log(message)
 
     def printMessage(self, message):
-        self.gui.printMessage(message,self.peer)
+        self.gui.printMessage(message, self.peer)
     
     def sendMessage(self, message):
         self.client.send(message)
@@ -148,6 +158,12 @@ class ChatApp():
 
     def getNick(self):
         return self.gui.getNick()
+    
+    def getPublicKey(self):
+        return self.encryption.getPublicKey()
+
+    def setPeerKey(self, key):
+        self.encryption.setPeerKey(key)
 
 if __name__ == "__main__":
     chatApp = ChatApp().run()

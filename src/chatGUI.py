@@ -12,18 +12,21 @@ class TopFrame(ttk.Frame):
         self.IPlabel.pack(**options)
 
         self.IPInput = ttk.Entry(self)
+        self.IPInput.insert(0,'localhost')
         self.IPInput.pack(**options)
 
         self.nickLabel = ttk.Label(self, text = 'Nickname')
         self.nickLabel.pack(**options)
 
         self.nickInput = ttk.Entry(self)
+        self.nickInput.insert(0,'nickname')
         self.nickInput.pack(**options)
 
         self.portLabel = ttk.Label(self,text='Port')
         self.portLabel.pack(**options)
 
         self.portInput = ttk.Entry(self)
+        self.portInput.insert(0,'3334')
         self.portInput.pack(**options)
 
         self.connectButton = ttk.Button(self, text='Connect to chat', command=lambda: controller.connect([self.IPInput.get(), self.portInput.get()]))
@@ -36,14 +39,17 @@ class InfoFrame(ttk.Frame):
         super().__init__(container)
         self.controller= controller
 
+        #self.publicKey = self.controller.getPublicKey()
         options = {'padx': 5, 'pady':5, 'side':tk.TOP}
-        self.connectedVar = tk.StringVar(self, 'Connected: False')
-        self.IPLabel = ttk.Label(self, textvariable=self.connectedVar)
-        self.IPLabel.pack(**options)
+        #self.PrimeVar = tk.StringVar(self, 'Chosen prime: ' + str(self.publicKey[2]) + '\nChosen alpha: ' + str(self.publicKey[1]) + '\nChosen Public key Beta: ' + str(self.publicKey[0]))
+        #self.KeyLabel = ttk.Label(self, textvariable=self.PrimeVar, borderwidth=2, wraplength=100)
+        #self.KeyLabel.pack(**options)
+
 
         self.serverPortLabel = ttk.Label(self, text='Server port to use')
         self.serverPortLabel.pack(padx = 5, side=tk.TOP)
         self.serverPortEntry = ttk.Entry(self)
+        self.serverPortEntry.insert(0,'3333')
         self.serverPortEntry.pack(padx = 5,side=tk.TOP)
 
         self.startServerButton = ttk.Button(self, text='start server', command=lambda: controller.startServer(self.serverPortEntry.get()))
@@ -52,6 +58,7 @@ class InfoFrame(ttk.Frame):
         self.exitButton = ttk.Button(self, text='Stop Server', command=lambda: controller.stopServer())
 
         self.pack(side=tk.LEFT)
+    
 
 class ChatFrame(ttk.Frame):
     def __init__(self,container):
@@ -105,6 +112,7 @@ class App(tk.Tk):
     def sendMessage(self, message):
         self.chatApp.sendMessage(message)
         self.chatFrame.addMessage(message, self.topFrame.nickInput.get())
+        self.messageFrame.messageBox.delete(0, tk.END)
 
     def connect(self, args):
         if(self.chatApp.connect(args)):
@@ -124,3 +132,6 @@ class App(tk.Tk):
     
     def getNick(self):
         return self.topFrame.nickInput.get()
+    
+    def getPublicKey(self):
+        return self.chatApp.getPublicKey()
