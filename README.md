@@ -8,7 +8,7 @@
 # Running Instructions:
 
 To run via executable(Only works on Windows): 
-    Navigate to the folder src/dist
+    Navigate to the folder src\dist\chat
     Run the chat app using chat.exe in that folder.
 
 To run via Python interpreter:
